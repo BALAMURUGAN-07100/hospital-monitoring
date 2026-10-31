@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Patient Queue & Bed Monitoring</title>
+  <meta name="description" content="Live Realtime Patient Queue and Seat Availability Monitor for Hospitals H01-H10">
+  
+  <!-- Modern Healthcare Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <!-- Firebase App & Database Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
+  <!-- Inline Configuration to prevent any browser caching -->
+  <script>
+    var firebaseConfig = {
+      apiKey: "AIzaSyBy4iapPn9tFE2u_Wm3r4ZAlWIPq5ebh-8",
+      authDomain: "hospital-monitering-10.firebaseapp.com",
+      databaseURL: "https://hospital-monitering-10-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "hospital-monitering-10",
+      storageBucket: "hospital-monitering-10.firebasestorage.app",
+      messagingSenderId: "410990725939",
+      appId: "1:410990725939:web:67bda7ca054a26abd70c46",
+      measurementId: "G-Q4N6RLRS32"
+    };
+    window.firebaseConfig = firebaseConfig;
+
+    if (typeof firebase !== "undefined" && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
+  <script src="js/firebase-config.js?v=10"></script>
+  <script src="js/public.js?v=10" defer></script>
+</head>
+<body>
+  <!-- Global Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">+</div>
+        <div class="brand-text">
+          <h1>Hospital Patient Monitoring</h1>
+          <p>Live Queue & Bed Availability Dashboard</p>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <div class="connection-badge" id="connectionBadge">
+          <span class="status-dot connecting" id="statusDot"></span>
+          <span id="connectionStatus">Connecting...</span>
+        </div>
+        <a href="login.html" class="nav-link admin-btn">Admin Login</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Patient Dashboard -->
+  <main class="main-wrapper">
+    <!-- Top Summary Statistics -->
+    <section class="summary-grid" aria-label="System Summary Overview">
+      <div class="stat-card">
+        <div class="stat-label">Total Hospitals</div>
+        <div class="stat-value" id="totalHospitals">10</div>
+        <div class="stat-subtext">H01 through H10 active</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Total Waiting Patients</div>
+        <div class="stat-value" id="totalWaiting">0</div>
+        <div class="stat-subtext">Across all hospital queues</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Available Free Seats</div>
+        <div class="stat-value" id="totalRemaining" style="color: var(--success);">500</div>
+        <div class="stat-subtext">Out of 500 total capacity</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">System Capacity</div>
+        <div class="stat-value" id="totalCapacity">500</div>
+        <div class="stat-subtext">50 seats per hospital</div>
+      </div>
+    </section>
+
+    <!-- Search & Hospital Grid Section -->
+    <section>
+      <div class="section-header">
+        <h2 class="section-title">Hospital Realtime Status</h2>
+        <div class="search-box">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search hospital name or ID (e.g. H01)..." aria-label="Search hospitals">
+        </div>
+      </div>
+
+      <!-- Live Cards Container populated by js/public.js -->
+      <div class="hospital-grid" id="hospitalsContainer">
+        <!-- Loading State Placeholder -->
+        <div style="grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: var(--text-muted); background: white; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+            Connecting to Realtime Database...
+          </div>
+          <p style="font-size: 0.875rem;">Fetching live waiting counts and seat availability for 10 hospitals.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <strong>Hospital Patient Monitoring System</strong> · Authorized Realtime Data Feed
+      </div>
+      <div>
+        Last synced: <span id="lastSyncTime">Syncing...</span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

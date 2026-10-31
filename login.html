@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal Login - Hospital Patient Monitoring</title>
+  
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Firebase App & Auth Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
+  <!-- Inline Configuration to prevent any browser caching -->
+  <script>
+    var firebaseConfig = {
+      apiKey: "AIzaSyBy4iapPn9tFE2u_Wm3r4ZAlWIPq5ebh-8",
+      authDomain: "hospital-monitering-10.firebaseapp.com",
+      databaseURL: "https://hospital-monitering-10-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "hospital-monitering-10",
+      storageBucket: "hospital-monitering-10.firebasestorage.app",
+      messagingSenderId: "410990725939",
+      appId: "1:410990725939:web:67bda7ca054a26abd70c46",
+      measurementId: "G-Q4N6RLRS32"
+    };
+    window.firebaseConfig = firebaseConfig;
+
+    var AUTHORIZED_ADMIN_UIDS = window.AUTHORIZED_ADMIN_UIDS || [];
+
+    if (typeof firebase !== "undefined" && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
+  <script src="js/firebase-config.js?v=10"></script>
+  <script src="js/auth.js?v=10"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="index.html" class="brand">
+        <div class="brand-icon">+</div>
+        <div class="brand-text">
+          <h1>Hospital Patient Monitoring</h1>
+          <p>Administrator Access Gateway</p>
+        </div>
+      </a>
+      <div class="header-actions">
+        <a href="index.html" class="nav-link">← Back to Public Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Main -->
+  <main class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="brand-icon" style="margin: 0 auto; width: 48px; height: 48px; font-size: 1.6rem;">🔒</div>
+        <h2>Administrator Sign In</h2>
+        <p>Restricted access for designated hospital system administrators.</p>
+      </div>
+
+      <!-- Error / Notice Banner -->
+      <div id="errorAlert" class="alert alert-danger" style="display: none;" role="alert"></div>
+
+      <form id="loginForm" autocomplete="off">
+        <div class="form-group">
+          <label for="adminEmail">Administrator Email</label>
+          <input
+            type="email"
+            id="adminEmail"
+            class="form-control"
+            placeholder="admin@hospital.org"
+            required
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input
+            type="password"
+            id="adminPassword"
+            class="form-control"
+            placeholder="••••••••••••"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-in" style="width: 100%; padding: 0.85rem; font-size: 1rem; margin-top: 0.5rem;">
+          Sign In as Administrator
+        </button>
+      </form>
+
+      <div style="margin-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+        <p>Public registration is disabled. Administrator identities and database write privileges are enforced via Firebase Security Rules.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>Hospital Patient Monitoring System · Secure Authentication</div>
+      <div>UID Authorization Active</div>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginForm = document.getElementById("loginForm");
+      const emailInput = document.getElementById("adminEmail");
+      const passwordInput = document.getElementById("adminPassword");
+      const submitBtn = document.getElementById("submitBtn");
+      const errorAlert = document.getElementById("errorAlert");
+
+
+      // Check query parameter for unauthorized redirection
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("error") === "unauthorized") {
+        const uid = urlParams.get("uid");
+        showError(uid
+          ? `Access Denied: Your account UID is "${uid}", but the system expects "${AUTHORIZED_ADMIN_UID}".`
+          : "Access Denied: Your account is authenticated, but its UID is not registered in the system administrator whitelist."
+        );
+      }
+
+      // If already logged in as authorized admin, redirect to admin.html
+      redirectIfAlreadyLoggedIn();
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideError();
+
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Verifying Credentials...";
+
+        try {
+          await loginAdmin(email, password);
+          // Redirect on success
+          window.location.replace("admin.html");
+        } catch (err) {
+          showError(err.message);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Sign In as Administrator";
+        }
+      });
+
+      function showError(msg) {
+        errorAlert.textContent = msg;
+        errorAlert.style.display = "block";
+      }
+
+      function hideError() {
+        errorAlert.style.display = "none";
+        errorAlert.textContent = "";
+      }
+    });
+  </script>
+</body>
+</html>

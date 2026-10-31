@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrator Dashboard - Hospital Patient Monitoring</title>
+  
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Firebase App, Auth & Database Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
+  <!-- Inline Configuration to prevent any browser caching -->
+  <script>
+    var firebaseConfig = {
+      apiKey: "AIzaSyBy4iapPn9tFE2u_Wm3r4ZAlWIPq5ebh-8",
+      authDomain: "hospital-monitering-10.firebaseapp.com",
+      databaseURL: "https://hospital-monitering-10-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "hospital-monitering-10",
+      storageBucket: "hospital-monitering-10.firebasestorage.app",
+      messagingSenderId: "410990725939",
+      appId: "1:410990725939:web:67bda7ca054a26abd70c46",
+      measurementId: "G-Q4N6RLRS32"
+    };
+    window.firebaseConfig = firebaseConfig;
+
+    var AUTHORIZED_ADMIN_UIDS = window.AUTHORIZED_ADMIN_UIDS || [];
+
+    if (typeof firebase !== "undefined" && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
+  <script src="js/firebase-config.js?v=10"></script>
+  <script src="js/auth.js?v=10"></script>
+  <script src="js/admin.js?v=10" defer></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="admin.html" class="brand">
+        <div class="brand-icon">⚙</div>
+        <div class="brand-text">
+          <h1>Admin Control Center</h1>
+          <p>Realtime Hospital Monitoring System</p>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <div class="connection-badge">
+          <span class="status-dot connecting" id="statusDot"></span>
+          <span id="connectionStatus">Connecting...</span>
+        </div>
+        <span id="adminEmailDisplay" style="font-size: 0.825rem; color: #94a3b8; font-weight: 600;">Authenticating...</span>
+        <button id="openAddHospitalBtn" class="btn btn-in btn-sm" style="display:none; padding:0.4rem 0.8rem; font-size:0.8rem; font-weight:600;">+ Add Hospital</button>
+        <a href="index.html" class="nav-link" target="_blank" title="Open Public Patient Website in new tab">Public View ↗</a>
+        <button id="logoutBtn" class="btn btn-secondary btn-sm" style="color: #ef4444; border-color: #fca5a5;">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Admin Dashboard -->
+  <main class="main-wrapper">
+    <!-- Top Summary Statistics -->
+    <section class="summary-grid" aria-label="Operational Summary">
+      <div class="stat-card">
+        <div class="stat-label">Total Waiting Patients</div>
+        <div class="stat-value" id="adminTotalWaiting">0</div>
+        <div class="stat-subtext">Across all 10 hospitals</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Patients IN Today</div>
+        <div class="stat-value" id="adminTotalIn" style="color: var(--success);">0</div>
+        <div class="stat-subtext">Today's total admissions (IST)</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Patients OUT Today</div>
+        <div class="stat-value" id="adminTotalOut" style="color: var(--danger);">0</div>
+        <div class="stat-subtext">Today's total departures (IST)</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Available Free Seats</div>
+        <div class="stat-value" id="adminTotalRemaining" style="color: var(--primary);">500</div>
+        <div class="stat-subtext">Out of 500 total system capacity</div>
+      </div>
+    </section>
+
+    <!-- Hospital Management Cards -->
+    <section>
+      <div class="section-header">
+        <h2 class="section-title">Hospital Queue Controls</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">
+          Each button executes an atomic transaction (Max: 50, Min: 0)
+        </span>
+      </div>
+
+      <div class="hospital-grid" id="adminHospitalsContainer">
+        <!-- Loaded dynamically by js/admin.js -->
+        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: white; border-radius: 12px; color: var(--text-muted);">
+          Loading hospital control nodes...
+        </div>
+      </div>
+    </section>
+
+    <!-- Event History Log Table -->
+    <section>
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <h2 class="section-title" style="margin-bottom: 0.25rem;">Realtime Audit & Event History</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+              Immutable audit log of all accepted IN/OUT transactions recorded by devices and administrators (Asia/Kolkata).
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="historyFilter" style="font-size: 0.825rem; font-weight: 600;">Filter:</label>
+            <select id="historyFilter" class="form-control" style="width: auto; padding: 0.4rem 0.75rem; font-size: 0.825rem;">
+              <option value="ALL">All Hospitals</option>
+            </select>
+            <button id="clearHistoryFilterBtn" class="btn btn-secondary btn-sm">Reset</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp (IST)</th>
+                <th>Hospital</th>
+                <th>Action</th>
+                <th>Resulting Count</th>
+                <th>Source</th>
+                <th>Actor UID</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  Loading event history...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Edit Hospital Name Modal -->
+  <div id="editModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <h3 class="modal-title" id="modalTitle">Rename Hospital</h3>
+      <input type="hidden" id="editHospitalId">
+      <div class="form-group">
+        <label for="editHospitalName">Hospital Display Name</label>
+        <input type="text" id="editHospitalName" class="form-control" maxlength="80" placeholder="e.g. City General Hospital">
+      </div>
+      <div class="modal-actions">
+        <button id="cancelNameBtn" class="btn btn-secondary btn-sm">Cancel</button>
+        <button id="saveNameBtn" class="btn btn-in btn-sm">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add New Hospital Modal -->
+  <div id="addHospitalModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+    <div class="modal-card">
+      <h3 class="modal-title" id="addModalTitle">Add New Hospital</h3>
+      <div class="form-group">
+        <label for="newHospitalId">Hospital ID (e.g. H11, H12, H13)</label>
+        <input type="text" id="newHospitalId" class="form-control" maxlength="10" placeholder="e.g. H11">
+      </div>
+      <div class="form-group">
+        <label for="newHospitalName">Hospital Display Name</label>
+        <input type="text" id="newHospitalName" class="form-control" maxlength="80" placeholder="e.g. City Care Center">
+      </div>
+      <div class="modal-actions">
+        <button id="cancelAddBtn" class="btn btn-secondary btn-sm">Cancel</button>
+        <button id="confirmAddBtn" class="btn btn-in btn-sm">Create Hospital</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>Hospital Patient Monitoring System · Secure Administrator Session</div>
+      <div>Security Rules Active</div>
+    </div>
+  </footer>
+</body>
+</html>
