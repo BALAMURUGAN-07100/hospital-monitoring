@@ -189,3 +189,105 @@ function getFirebaseAuth() {
   initFirebaseApp();
   return firebase.auth();
 }
+
+// Default Hospital Locations (Addresses and Coordinates)
+var DEFAULT_HOSPITAL_LOCATIONS = {
+  H01: {
+    address: "Rajiv Gandhi Government General Hospital, EVR Periyar Salai, Park Town, Chennai",
+    lat: 13.0805,
+    lng: 80.2783
+  },
+  H02: {
+    address: "Apollo Hospital, 21 Greams Lane, Thousand Lights, Chennai",
+    lat: 13.0604,
+    lng: 80.2505
+  },
+  H03: {
+    address: "MIOT International Hospital, 4/112 Mount Poonamallee Road, Manapakkam, Chennai",
+    lat: 13.0232,
+    lng: 80.1818
+  },
+  H04: {
+    address: "Fortis Malar Hospital, 52 1st Main Road, Gandhi Nagar, Adyar, Chennai",
+    lat: 13.0067,
+    lng: 80.2570
+  },
+  H05: {
+    address: "SIMS Hospital, 1 Jawaharlal Nehru Salai, Vadapalani, Chennai",
+    lat: 13.0524,
+    lng: 80.2119
+  },
+  H06: {
+    address: "Stanley Medical College & Hospital, Old Jail Road, Royapuram, Chennai",
+    lat: 13.1066,
+    lng: 80.2872
+  },
+  H07: {
+    address: "Government Kilpauk Medical College Hospital, Poonamallee High Road, Kilpauk, Chennai",
+    lat: 13.0792,
+    lng: 80.2442
+  },
+  H08: {
+    address: "Kauvery Hospital, 199 Luz Church Road, Mylapore, Chennai",
+    lat: 13.0368,
+    lng: 80.2676
+  },
+  H09: {
+    address: "Gleneagles Global Health City, 439 Cheran Nagar, Perumbakkam, Chennai",
+    lat: 12.9056,
+    lng: 80.2037
+  },
+  H10: {
+    address: "Chettinad Super Speciality Hospital, Rajiv Gandhi Salai (OMR), Kelambakkam, Chennai",
+    lat: 12.7885,
+    lng: 80.2223
+  }
+};
+window.DEFAULT_HOSPITAL_LOCATIONS = DEFAULT_HOSPITAL_LOCATIONS;
+
+/**
+ * Calculates Haversine distance between two GPS coordinates in kilometers
+ */
+function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+window.calculateDistanceKm = calculateDistanceKm;
+
+/**
+ * Helper to get hospital location metadata
+ */
+function getHospitalLocation(hid, dbRecord) {
+  const rec = dbRecord || {};
+  const def = DEFAULT_HOSPITAL_LOCATIONS[hid] || {
+    address: `${rec.name || hid} Medical Center`,
+    lat: 13.0827,
+    lng: 80.2707
+  };
+  return {
+    address: rec.address || def.address,
+    lat: typeof rec.lat === "number" ? rec.lat : def.lat,
+    lng: typeof rec.lng === "number" ? rec.lng : def.lng
+  };
+}
+window.getHospitalLocation = getHospitalLocation;
+
+/**
+ * Generate Google Maps Navigation URL from user to destination
+ */
+function getGoogleMapsRouteUrl(destinationAddress, lat, lng) {
+  if (lat && lng) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  }
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationAddress)}`;
+}
+window.getGoogleMapsRouteUrl = getGoogleMapsRouteUrl;
+

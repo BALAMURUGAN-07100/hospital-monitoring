@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Portal Login - Hospital Patient Monitoring</title>
   
-  <link rel="stylesheet" href="css/styles.css?v=3d">
+  <link rel="stylesheet" href="css/styles.css?v=14">
 
   <!-- Firebase App & Auth Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -31,8 +31,8 @@
       firebase.initializeApp(firebaseConfig);
     }
   </script>
-  <script src="js/firebase-config.js?v=13"></script>
-  <script src="js/auth.js?v=13"></script>
+  <script src="js/firebase-config.js?v=14"></script>
+  <script src="js/auth.js?v=14"></script>
 <style>
 /* ==========================================================================
    Hospital Patient Monitoring System - Ultra 3D Edition
@@ -885,6 +885,383 @@ tr:hover td {
   .stat-value { font-size: 1.85rem; }
   .hospital-grid { grid-template-columns: 1fr; gap: 1.25rem; }
   .header-actions { width: 100%; justify-content: space-between; }
+}
+
+
+/* ==========================================================================
+   Patient Journey / Toy Animation (Home <-> Hospital)
+   Walking, Riding Bike, Driving Car, Flying Aeroplane
+   ========================================================================== */
+.transit-stage {
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 0.5rem 0.85rem;
+  margin: 0.85rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.08), 0 2px 0 #ffffff;
+}
+
+.transit-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  user-select: none;
+}
+
+.transit-point .transit-icon {
+  font-size: 1.55rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+  transition: transform 0.2s ease;
+}
+
+.transit-point.home-point .transit-icon {
+  animation: homePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes homePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1) translateY(-2px); }
+}
+
+.transit-point .transit-label {
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.transit-track {
+  flex: 1;
+  height: 28px;
+  margin: 0 0.65rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.transit-lane {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    #94a3b8 0,
+    #94a3b8 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  opacity: 0.7;
+}
+
+/* Moving Avatar */
+.traveler-avatar {
+  position: absolute;
+  font-size: 1.6rem;
+  line-height: 1;
+  z-index: 10;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+/* Animations IN (Home -> Hospital) */
+@keyframes travelInWalk {
+  0% { left: 0%; transform: scaleX(1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  25% { transform: scaleX(1) translateY(-4px); }
+  50% { transform: scaleX(1) translateY(0); }
+  75% { transform: scaleX(1) translateY(-4px); }
+  90% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelInBike {
+  0% { left: 0%; transform: scaleX(1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  30% { transform: scaleX(1) translateY(-2px); }
+  60% { transform: scaleX(1) translateY(1px); }
+  90% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelInCar {
+  0% { left: 0%; transform: scaleX(1) scale(1.15); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: scaleX(1) scale(1.15) translateY(-1px); }
+  90% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) scale(1.15); opacity: 0; }
+}
+
+@keyframes travelInPlane {
+  0% { left: 0%; transform: scaleX(1) translateY(4px) rotate(6deg); opacity: 0; }
+  15% { opacity: 1; }
+  50% { transform: scaleX(1) translateY(-7px) rotate(-4deg); }
+  85% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) translateY(2px) rotate(4deg); opacity: 0; }
+}
+
+/* Animations OUT (Hospital -> Home) */
+@keyframes travelOutWalk {
+  0% { left: 88%; transform: scaleX(-1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  25% { transform: scaleX(-1) translateY(-4px); }
+  50% { transform: scaleX(-1) translateY(0); }
+  75% { transform: scaleX(-1) translateY(-4px); }
+  90% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelOutBike {
+  0% { left: 88%; transform: scaleX(-1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  30% { transform: scaleX(-1) translateY(-2px); }
+  60% { transform: scaleX(-1) translateY(1px); }
+  90% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelOutCar {
+  0% { left: 88%; transform: scaleX(-1) scale(1.15); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: scaleX(-1) scale(1.15) translateY(-1px); }
+  90% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) scale(1.15); opacity: 0; }
+}
+
+@keyframes travelOutPlane {
+  0% { left: 88%; transform: scaleX(-1) translateY(4px) rotate(-6deg); opacity: 0; }
+  15% { opacity: 1; }
+  50% { transform: scaleX(-1) translateY(-7px) rotate(4deg); }
+  85% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) translateY(2px) rotate(-4deg); opacity: 0; }
+}
+
+/* Button Toy Avatars */
+.toy-icon {
+  display: inline-block;
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.toy-in {
+  animation: toyInBounce 2s ease-in-out infinite;
+}
+
+.toy-out {
+  animation: toyOutBounce 2s ease-in-out infinite 0.5s;
+}
+
+@keyframes toyInBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.15); }
+}
+
+@keyframes toyOutBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.15); }
+}
+
+.btn-in:hover .toy-in {
+  transform: translateX(4px) scale(1.25);
+}
+
+.btn-out:hover .toy-out {
+  transform: translateX(-4px) scale(1.25);
+}
+
+/* Patient Tab Top Navigation Bar */
+.patient-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.patient-nav-item {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.4rem 0.95rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.patient-nav-item:hover, .patient-nav-item.active {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+
+/* ==========================================================================
+   Hospital Location, Live GPS Distance, and Route Actions
+   ========================================================================== */
+.hospital-location-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  margin: 0.6rem 0;
+  font-size: 0.775rem;
+  color: #334155;
+  line-height: 1.3;
+}
+
+.location-icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.location-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.badge-distance {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.35);
+}
+
+/* 3D Best Route Navigation Button & Actions */
+.card-route-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0.4rem 0;
+}
+
+.btn-route {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.55rem 0.9rem;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff !important;
+  font-size: 0.825rem;
+  font-weight: 800;
+  border-radius: 10px;
+  text-decoration: none !important;
+  border: 1px solid #1e40af;
+  border-bottom: 3px solid #172554;
+  box-shadow: 0 3px 6px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-route:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-route:active {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Map Modal & Leaflet Styling */
+.map-modal-card {
+  max-width: 900px !important;
+  width: 95vw !important;
+  max-height: 92vh !important;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+#hospitalMap {
+  width: 100%;
+  height: 60vh;
+  min-height: 380px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+  margin: 0.5rem 0;
+  z-index: 10;
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 0.6rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 0.775rem;
+  font-weight: 700;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.green { background: #16a34a; box-shadow: 0 0 6px #16a34a; }
+.legend-dot.yellow { background: #d97706; box-shadow: 0 0 6px #d97706; }
+.legend-dot.red { background: #dc2626; box-shadow: 0 0 6px #dc2626; }
+
+.map-nav-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-family: inherit;
+}
+
+.map-nav-btn:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5) !important;
 }
 
 </style>

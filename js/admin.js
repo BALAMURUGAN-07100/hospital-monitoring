@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const editModal = document.getElementById("editModal");
   const editHospitalIdInput = document.getElementById("editHospitalId");
   const editHospitalNameInput = document.getElementById("editHospitalName");
+  const editHospitalAddressInput = document.getElementById("editHospitalAddress");
   const saveNameBtn = document.getElementById("saveNameBtn");
   const cancelNameBtn = document.getElementById("cancelNameBtn");
 
@@ -273,6 +274,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const capacity = HOSPITAL_CAPACITY;
       const remaining = Math.max(0, capacity - waiting);
       const updatedAt = hospital.updatedAt || null;
+      const loc = typeof getHospitalLocation === "function" ? getHospitalLocation(id, hospital) : { address: `${name} Medical Center`, lat: 13.06, lng: 80.25 };
+      const routeUrl = typeof getGoogleMapsRouteUrl === "function" ? getGoogleMapsRouteUrl(loc.address, loc.lat, loc.lng) : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.address)}`;
+
 
       const daily = dailyData[id] || { inTotal: 0, outTotal: 0 };
       const inToday = daily.inTotal || 0;
@@ -300,6 +304,13 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="metric-display">
             <div class="metric-number">${waiting}</div>
             <div class="metric-label">Waiting Patients (${remaining} free seats)</div>
+          </div>
+
+          <!-- Location & Route Info -->
+          <div class="hospital-location-chip" title="${escapeHtml(loc.address)}">
+            <span class="location-icon">📍</span>
+            <span class="location-text">${escapeHtml(loc.address)}</span>
+            <a href="${routeUrl}" target="_blank" rel="noopener noreferrer" style="color:#0284c7; font-weight:800; font-size:0.75rem; text-decoration:underline; margin-left:auto;">Route ↗</a>
           </div>
 
           <div class="progress-container">
@@ -593,9 +604,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const currentHospital = hospitalsData[hospitalId] || {};
     const currentName = currentHospital.name || `Hospital ${hospitalId}`;
+    const loc = typeof getHospitalLocation === "function" ? getHospitalLocation(hospitalId, currentHospital) : { address: "" };
     
     if (editHospitalIdInput) editHospitalIdInput.value = hospitalId;
     if (editHospitalNameInput) editHospitalNameInput.value = currentName;
+    if (editHospitalAddressInput) editHospitalAddressInput.value = currentHospital.address || loc.address || "";
     if (editModal) editModal.classList.remove("hidden");
   };
 
@@ -626,17 +639,18 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const nowTs = Date.now();
 
-      // Update in private hospitals
-      await db.ref(`hospitals/${hospitalId}`).update({
+      const newAddress = editHospitalAddressInput ? editHospitalAddressInput.value.trim() : "";
+      const updatePayload = {
         name: newName,
         updatedAt: nowTs
-      });
+      };
+      if (newAddress) updatePayload.address = newAddress;
+
+      // Update in private hospitals
+      await db.ref(`hospitals/${hospitalId}`).update(updatePayload);
 
       // Update in publicHospitals
-      await db.ref(`publicHospitals/${hospitalId}`).update({
-        name: newName,
-        updatedAt: nowTs
-      });
+      await db.ref(`publicHospitals/${hospitalId}`).update(updatePayload);
 
       showToast(`Hospital name for ${hospitalId} updated to "${newName}".`, "success");
       closeEditModal();
@@ -669,6 +683,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmAddBtn = document.getElementById("confirmAddBtn");
   const newHospitalIdInput = document.getElementById("newHospitalId");
   const newHospitalNameInput = document.getElementById("newHospitalName");
+  const newHospitalAddressInput = document.getElementById("newHospitalAddress");
 
   function openAddHospitalModal() {
     const allIds = getAllLiveHospitalIds();
@@ -683,6 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const suggestedId = `H${String(nextNum).padStart(2, "0")}`;
     if (newHospitalIdInput) newHospitalIdInput.value = suggestedId;
     if (newHospitalNameInput) newHospitalNameInput.value = `Hospital ${String(nextNum).padStart(2, "0")}`;
+    if (newHospitalAddressInput) newHospitalAddressInput.value = "";
     if (addHospitalModal) addHospitalModal.classList.remove("hidden");
   }
 
@@ -712,6 +728,7 @@ document.addEventListener("DOMContentLoaded", () => {
       confirmAddBtn.disabled = true;
       confirmAddBtn.textContent = "Creating...";
 
+      const address = newHospitalAddressInput ? newHospitalAddressInput.value.trim() : "";
       const newRecord = {
         id: id,
         name: name,
@@ -719,6 +736,9 @@ document.addEventListener("DOMContentLoaded", () => {
         capacity: HOSPITAL_CAPACITY,
         updatedAt: Date.now()
       };
+      if (address) {
+        newRecord.address = address;
+      }
 
       try {
         await db.ref(`hospitals/${id}`).set(newRecord);
