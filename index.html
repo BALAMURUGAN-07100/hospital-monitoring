@@ -887,26 +887,259 @@ tr:hover td {
   .header-actions { width: 100%; justify-content: space-between; }
 }
 
+
+/* ==========================================================================
+   Patient Journey / Toy Animation (Home <-> Hospital)
+   Walking, Riding Bike, Driving Car, Flying Aeroplane
+   ========================================================================== */
+.transit-stage {
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 0.5rem 0.85rem;
+  margin: 0.85rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.08), 0 2px 0 #ffffff;
+}
+
+.transit-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  user-select: none;
+}
+
+.transit-point .transit-icon {
+  font-size: 1.55rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+  transition: transform 0.2s ease;
+}
+
+.transit-point.home-point .transit-icon {
+  animation: homePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes homePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1) translateY(-2px); }
+}
+
+.transit-point .transit-label {
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.transit-track {
+  flex: 1;
+  height: 28px;
+  margin: 0 0.65rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.transit-lane {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    #94a3b8 0,
+    #94a3b8 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  opacity: 0.7;
+}
+
+/* Moving Avatar */
+.traveler-avatar {
+  position: absolute;
+  font-size: 1.6rem;
+  line-height: 1;
+  z-index: 10;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+/* Animations IN (Home -> Hospital) */
+@keyframes travelInWalk {
+  0% { left: 0%; transform: scaleX(1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  25% { transform: scaleX(1) translateY(-4px); }
+  50% { transform: scaleX(1) translateY(0); }
+  75% { transform: scaleX(1) translateY(-4px); }
+  90% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelInBike {
+  0% { left: 0%; transform: scaleX(1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  30% { transform: scaleX(1) translateY(-2px); }
+  60% { transform: scaleX(1) translateY(1px); }
+  90% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelInCar {
+  0% { left: 0%; transform: scaleX(1) scale(1.15); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: scaleX(1) scale(1.15) translateY(-1px); }
+  90% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) scale(1.15); opacity: 0; }
+}
+
+@keyframes travelInPlane {
+  0% { left: 0%; transform: scaleX(1) translateY(4px) rotate(6deg); opacity: 0; }
+  15% { opacity: 1; }
+  50% { transform: scaleX(1) translateY(-7px) rotate(-4deg); }
+  85% { opacity: 1; }
+  100% { left: 88%; transform: scaleX(1) translateY(2px) rotate(4deg); opacity: 0; }
+}
+
+/* Animations OUT (Hospital -> Home) */
+@keyframes travelOutWalk {
+  0% { left: 88%; transform: scaleX(-1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  25% { transform: scaleX(-1) translateY(-4px); }
+  50% { transform: scaleX(-1) translateY(0); }
+  75% { transform: scaleX(-1) translateY(-4px); }
+  90% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelOutBike {
+  0% { left: 88%; transform: scaleX(-1) translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  30% { transform: scaleX(-1) translateY(-2px); }
+  60% { transform: scaleX(-1) translateY(1px); }
+  90% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) translateY(0); opacity: 0; }
+}
+
+@keyframes travelOutCar {
+  0% { left: 88%; transform: scaleX(-1) scale(1.15); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: scaleX(-1) scale(1.15) translateY(-1px); }
+  90% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) scale(1.15); opacity: 0; }
+}
+
+@keyframes travelOutPlane {
+  0% { left: 88%; transform: scaleX(-1) translateY(4px) rotate(-6deg); opacity: 0; }
+  15% { opacity: 1; }
+  50% { transform: scaleX(-1) translateY(-7px) rotate(4deg); }
+  85% { opacity: 1; }
+  100% { left: 0%; transform: scaleX(-1) translateY(2px) rotate(-4deg); opacity: 0; }
+}
+
+/* Button Toy Avatars */
+.toy-icon {
+  display: inline-block;
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.toy-in {
+  animation: toyInBounce 2s ease-in-out infinite;
+}
+
+.toy-out {
+  animation: toyOutBounce 2s ease-in-out infinite 0.5s;
+}
+
+@keyframes toyInBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.15); }
+}
+
+@keyframes toyOutBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.15); }
+}
+
+.btn-in:hover .toy-in {
+  transform: translateX(4px) scale(1.25);
+}
+
+.btn-out:hover .toy-out {
+  transform: translateX(-4px) scale(1.25);
+}
+
+/* Patient Tab Top Navigation Bar */
+.patient-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.patient-nav-item {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.4rem 0.95rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.patient-nav-item:hover, .patient-nav-item.active {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 </style>
 </head>
 <body>
-  <!-- Global Header -->
+  <!-- Global Header with Top Patient Navigation Bar -->
   <header class="site-header">
     <div class="header-container">
       <a href="index.html" class="brand">
-        <div class="brand-icon">+</div>
+        <div class="brand-icon">🏥</div>
         <div class="brand-text">
           <h1>Hospital Patient Monitoring</h1>
           <p>Live Queue & Bed Availability Dashboard</p>
         </div>
       </a>
 
+      <!-- Patient Tab Top Navigation Bar -->
+      <nav class="patient-nav-bar" aria-label="Patient Navigation Bar">
+        <a href="#summary-stats" class="patient-nav-item active">📊 Total Beds</a>
+        <a href="#hospital-list" class="patient-nav-item">🏥 Hospital Status</a>
+        <a href="#searchInput" class="patient-nav-item">🔍 Search Queue</a>
+      </nav>
+
       <div class="header-actions">
         <div class="connection-badge" id="connectionBadge">
           <span class="status-dot connecting" id="statusDot"></span>
           <span id="connectionStatus">Connecting...</span>
         </div>
-        <a href="login.html" class="nav-link admin-btn">Admin Login</a>
+        <a href="login.html" class="nav-link admin-btn">🔒 Admin Portal</a>
       </div>
     </div>
   </header>
@@ -914,7 +1147,7 @@ tr:hover td {
   <!-- Main Patient Dashboard -->
   <main class="main-wrapper">
     <!-- Top Summary Statistics -->
-    <section class="summary-grid" aria-label="System Summary Overview">
+    <section class="summary-grid" id="summary-stats" aria-label="System Summary Overview">
       <div class="stat-card">
         <div class="stat-label">Total Hospitals</div>
         <div class="stat-value" id="totalHospitals">10</div>
@@ -941,7 +1174,7 @@ tr:hover td {
     </section>
 
     <!-- Search & Hospital Grid Section -->
-    <section>
+    <section id="hospital-list">
       <div class="section-header">
         <h2 class="section-title">Hospital Realtime Status</h2>
         <div class="search-box">

@@ -79,6 +79,34 @@ document.addEventListener("DOMContentLoaded", () => {
     return Array.from(new Set(combined)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
   }
 
+  const lastWaitingCounts = {};
+
+  function triggerPatientJourney(hospitalId, action) {
+    const track = document.getElementById(`transit-track-${hospitalId}`);
+    if (!track) return;
+
+    const modes = [
+      { emoji: "🚶‍♂️", inAnim: "travelInWalk 1.8s ease-in-out forwards", outAnim: "travelOutWalk 1.8s ease-in-out forwards" },
+      { emoji: "🚴‍♂️", inAnim: "travelInBike 1.4s ease-in-out forwards", outAnim: "travelOutBike 1.4s ease-in-out forwards" },
+      { emoji: "🚗", inAnim: "travelInCar 1.1s ease-in-out forwards", outAnim: "travelOutCar 1.1s ease-in-out forwards" },
+      { emoji: "✈️", inAnim: "travelInPlane 1.3s ease-in-out forwards", outAnim: "travelOutPlane 1.3s ease-in-out forwards" }
+    ];
+
+    const chosen = modes[Math.floor(Math.random() * modes.length)];
+
+    const avatar = document.createElement("div");
+    avatar.className = "traveler-avatar";
+    avatar.textContent = chosen.emoji;
+    avatar.style.animation = (action === "IN") ? chosen.inAnim : chosen.outAnim;
+
+    track.appendChild(avatar);
+
+    setTimeout(() => {
+      if (avatar.parentNode) avatar.parentNode.removeChild(avatar);
+    }, 2000);
+  }
+  window.triggerPatientJourney = triggerPatientJourney;
+
   /**
    * Render all dynamically detected hospital cards and summary metrics
    */
@@ -104,6 +132,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       totalWaiting += waiting;
       totalSeatsRemaining += remaining;
+
+      // Trigger traveler animation if count changed
+      if (lastWaitingCounts[id] !== undefined && lastWaitingCounts[id] !== waiting) {
+        const action = waiting > lastWaitingCounts[id] ? "IN" : "OUT";
+        setTimeout(() => triggerPatientJourney(id, action), 80);
+      }
+      lastWaitingCounts[id] = waiting;
 
       // Filter check
       if (filterQuery) {
@@ -147,6 +182,21 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="seat-stats">
               <span>Capacity: ${capacity}</span>
               <span class="seat-remaining ${seatStatusClass}">${remaining} seats free</span>
+            </div>
+          </div>
+
+          <!-- Animated Patient Transit Stage (Home <-> Hospital) -->
+          <div class="transit-stage" id="transit-stage-${id}">
+            <div class="transit-point home-point" title="Home: Patients depart or return here">
+              <span class="transit-icon">🏠</span>
+              <span class="transit-label">Home</span>
+            </div>
+            <div class="transit-track" id="transit-track-${id}">
+              <div class="transit-lane"></div>
+            </div>
+            <div class="transit-point hospital-point" title="Hospital: Queue & treatment">
+              <span class="transit-icon">🏥</span>
+              <span class="transit-label">Hospital</span>
             </div>
           </div>
 

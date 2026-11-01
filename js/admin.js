@@ -37,13 +37,18 @@ document.addEventListener("DOMContentLoaded", () => {
   requireAdminAuth(async (user) => {
     adminUser = user;
 
-    // Check Firebase Database /admins/<uid> for an assigned hospitalId mapping
+    // Check Firebase Database /admins/<uid> or /admins/<emailKey> for an assigned hospitalId mapping
     try {
       if (typeof firebase !== "undefined" && firebase.database) {
         const snap = await firebase.database().ref(`admins/${user.uid}`).once("value");
-        const val = snap.val();
+        let val = snap.val();
+        if (!val && user.email) {
+          const emailKey = user.email.toLowerCase().trim().replace(/\./g, ",");
+          const snapEmail = await firebase.database().ref(`admins/${emailKey}`).once("value");
+          val = snapEmail.val();
+        }
         if (val) {
-          const hid = typeof val === "string" ? val : val.hospitalId;
+          const hid = typeof val === "string" ? val : (val.hospitalId || val.hospital);
           if (hid) {
             sessionStorage.setItem("admin_assigned_hospital", hid);
           }
@@ -214,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // 4. Subscribe to events
+    let previousEventIds = new Set();
     db.ref("events").on("value", (snap) => {
       const allEvents = snap.val() || {};
       const flattened = [];
@@ -224,6 +230,13 @@ document.addEventListener("DOMContentLoaded", () => {
             id: eid,
             ...hospitalEvents[eid]
           });
+          if (previousEventIds.size > 0 && !previousEventIds.has(eid)) {
+            const ev = hospitalEvents[eid];
+            if (ev && ev.hospitalId && ev.action) {
+              triggerPatientJourney(ev.hospitalId, ev.action);
+            }
+          }
+          previousEventIds.add(eid);
         });
       });
 
@@ -295,6 +308,21 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </div>
 
+          <!-- Animated Patient Transit Stage (Home <-> Hospital) -->
+          <div class="transit-stage" id="transit-stage-${id}">
+            <div class="transit-point home-point" title="Home: Patients depart or return here">
+              <span class="transit-icon">🏠</span>
+              <span class="transit-label">Home</span>
+            </div>
+            <div class="transit-track" id="transit-track-${id}">
+              <div class="transit-lane"></div>
+            </div>
+            <div class="transit-point hospital-point" title="Hospital: Queue admission & treatment">
+              <span class="transit-icon">🏥</span>
+              <span class="transit-label">Hospital</span>
+            </div>
+          </div>
+
           <div class="daily-counts-pill">
             <span class="daily-in">Today's IN: <strong>+${inToday}</strong></span>
             <span class="daily-out">Today's OUT: <strong>-${outToday}</strong></span>
@@ -303,11 +331,13 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="admin-card-controls">
             <button class="btn btn-in" data-id="${id}" data-action="IN" ${disableIn ? "disabled" : ""}
               onclick="window.handlePatientAction('${id}', 'IN')">
-              + Patient IN
+              <span class="toy-icon toy-in">🚶‍♂️</span>
+              <span>+ Patient IN</span>
             </button>
             <button class="btn btn-out" data-id="${id}" data-action="OUT" ${disableOut ? "disabled" : ""}
               onclick="window.handlePatientAction('${id}', 'OUT')">
-              - Patient OUT
+              <span class="toy-icon toy-out">🏃‍♂️</span>
+              <span>- Patient OUT</span>
             </button>
           </div>
 
@@ -405,6 +435,39 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /**
+   * Animated Toy Traveler Journey (Home <-> Hospital)
+   * Randomly selects: 🚶‍♂️ Walking | 🚴‍♂️ Bike | 🚗 Car | ✈️ Aeroplane
+   *
+   * @param {string} hospitalId
+   * @param {"IN"|"OUT"} action
+   */
+  function triggerPatientJourney(hospitalId, action) {
+    const track = document.getElementById(`transit-track-${hospitalId}`);
+    if (!track) return;
+
+    const modes = [
+      { emoji: "🚶‍♂️", inAnim: "travelInWalk 1.8s ease-in-out forwards", outAnim: "travelOutWalk 1.8s ease-in-out forwards" },
+      { emoji: "🚴‍♂️", inAnim: "travelInBike 1.4s ease-in-out forwards", outAnim: "travelOutBike 1.4s ease-in-out forwards" },
+      { emoji: "🚗", inAnim: "travelInCar 1.1s ease-in-out forwards", outAnim: "travelOutCar 1.1s ease-in-out forwards" },
+      { emoji: "✈️", inAnim: "travelInPlane 1.3s ease-in-out forwards", outAnim: "travelOutPlane 1.3s ease-in-out forwards" }
+    ];
+
+    const chosen = modes[Math.floor(Math.random() * modes.length)];
+
+    const avatar = document.createElement("div");
+    avatar.className = "traveler-avatar";
+    avatar.textContent = chosen.emoji;
+    avatar.style.animation = (action === "IN") ? chosen.inAnim : chosen.outAnim;
+
+    track.appendChild(avatar);
+
+    setTimeout(() => {
+      if (avatar.parentNode) avatar.parentNode.removeChild(avatar);
+    }, 2000);
+  }
+  window.triggerPatientJourney = triggerPatientJourney;
+
+  /**
    * Handle Patient IN or OUT button press with Atomic RTDB Transaction
    *
    * @param {string} hospitalId
@@ -418,6 +481,9 @@ document.addEventListener("DOMContentLoaded", () => {
       showToast(`Permission Denied: You are only authorized to manage Hospital ${assigned}.`, "error");
       return;
     }
+
+    // Trigger instant visual traveler animation
+    triggerPatientJourney(hospitalId, action);
 
     actionInProgress[hospitalId] = true;
     renderAdminHospitals();

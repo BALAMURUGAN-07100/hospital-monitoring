@@ -31,7 +31,12 @@ async function loginAdmin(email, password) {
       try {
         if (typeof firebase !== "undefined" && firebase.database) {
           const snap = await firebase.database().ref(`admins/${user.uid}`).once("value");
-          const val = snap.val();
+          let val = snap.val();
+          if (!val && user.email) {
+            const emailKey = user.email.toLowerCase().trim().replace(/\./g, ",");
+            const snapEmail = await firebase.database().ref(`admins/${emailKey}`).once("value");
+            val = snapEmail.val();
+          }
           if (val) {
             assignedHospital = typeof val === "string" ? val : (val.hospitalId || val.hospital);
           }
@@ -95,7 +100,12 @@ async function loginAdmin(email, password) {
       try {
         if (typeof firebase !== "undefined" && firebase.database) {
           const snap = await firebase.database().ref(`admins/${uid}`).once("value");
-          const val = snap.val();
+          let val = snap.val();
+          if (!val && restUser.email) {
+            const emailKey = restUser.email.toLowerCase().trim().replace(/\./g, ",");
+            const snapEmail = await firebase.database().ref(`admins/${emailKey}`).once("value");
+            val = snapEmail.val();
+          }
           if (val) {
             assignedHospital = typeof val === "string" ? val : (val.hospitalId || val.hospital);
           }
@@ -187,7 +197,12 @@ function requireAdminAuth(onAuthorized) {
         try {
           if (typeof firebase !== "undefined" && firebase.database) {
             const snap = await firebase.database().ref(`admins/${user.uid}`).once("value");
-            const val = snap.val();
+            let val = snap.val();
+            if (!val && user.email) {
+              const emailKey = user.email.toLowerCase().trim().replace(/\./g, ",");
+              const snapEmail = await firebase.database().ref(`admins/${emailKey}`).once("value");
+              val = snapEmail.val();
+            }
             if (val) {
               assigned = typeof val === "string" ? val : (val.hospitalId || val.hospital);
             }
