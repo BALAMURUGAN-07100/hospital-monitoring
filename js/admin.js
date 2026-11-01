@@ -34,8 +34,25 @@ document.addEventListener("DOMContentLoaded", () => {
   let actionInProgress = {}; // map of hospitalId -> boolean to prevent rapid double-clicks
 
   // 1. Guard page with requireAdminAuth
-  requireAdminAuth((user) => {
+  requireAdminAuth(async (user) => {
     adminUser = user;
+
+    // Check Firebase Database /admins/<uid> for an assigned hospitalId mapping
+    try {
+      if (typeof firebase !== "undefined" && firebase.database) {
+        const snap = await firebase.database().ref(`admins/${user.uid}`).once("value");
+        const val = snap.val();
+        if (val) {
+          const hid = typeof val === "string" ? val : val.hospitalId;
+          if (hid) {
+            sessionStorage.setItem("admin_assigned_hospital", hid);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Database admin check note:", e.message);
+    }
+
     const assigned = getAssignedHospital();
     if (adminEmailDisplay) {
       const email = user.email || "Authorized Admin";
@@ -59,7 +76,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getAssignedHospital() {
-    return sessionStorage.getItem("admin_assigned_hospital") || (typeof getAdminAssignedHospital === "function" ? getAdminAssignedHospital(adminUser) : "ALL") || "ALL";
+    // 1. Explicit Super Admin whitelist (ONLY Balamurugan gets ALL)
+    if (adminUser) {
+      const email = (adminUser.email || "").toLowerCase();
+      if (email.includes("balamurugan") || (typeof AUTHORIZED_ADMIN_UIDS !== "undefined" && AUTHORIZED_ADMIN_UIDS.includes(adminUser.uid))) {
+        return "ALL";
+      }
+    }
+
+    // 2. Compute directly from current user email (e.g. admin-h02, hospital2, admin2)
+    if (adminUser && typeof getAdminAssignedHospital === "function") {
+      const computed = getAdminAssignedHospital(adminUser);
+      if (computed && computed !== "ALL") {
+        return computed;
+      }
+    }
+
+    // 3. Check session storage (from database mapping)
+    const fromSession = sessionStorage.getItem("admin_assigned_hospital");
+    if (fromSession && fromSession !== "ALL") {
+      return fromSession;
+    }
+
+    // 4. Fallback for non-superadmin: default to H01 (never ALL)
+    return "H01";
   }
 
   function getVisibleHospitals() {

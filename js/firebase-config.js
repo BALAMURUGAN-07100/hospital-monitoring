@@ -39,23 +39,55 @@ function getAdminAssignedHospital(user) {
   const uid = user.uid || "";
   const email = (user.email || "").toLowerCase().trim();
 
-  // 1. Check if email is assigned to a specific hospital (e.g. admin-h01@hospital.com, h02@..., staff-h11@...)
-  const match = email.match(/(?:admin[._-]?)?h(\d+)(?:[._-]|@)/i) || email.match(/^h(\d+)@/i);
-  if (match) {
-    const num = parseInt(match[1], 10);
-    return `H${String(num).padStart(2, "0")}`;
+  // 1. Explicit Super Admin whitelist (ONLY Balamurugan gets ALL)
+  if (email.includes("balamurugan") || (typeof AUTHORIZED_ADMIN_UIDS !== "undefined" && AUTHORIZED_ADMIN_UIDS.includes(uid))) {
+    return "ALL";
   }
 
-  // 2. Fallback check for any hospital id in email
-  for (const hid of HOSPITAL_IDS) {
-    if (email.includes(hid.toLowerCase())) {
-      return hid;
+  // 2. Comprehensive check for hospital number in email:
+  // Matches: admin-h02, admin-h2, admin2, hospital2, hospital02, hospital-02, hos2, hosp2,
+  //          h02@, h2@, admin@hospital2.com, user-h02, staff2, doctor2, dr2, 2admin, etc.
+  const hospitalPatterns = [
+    /(?:admin|hospital|hos|hosp|staff|unit|branch|user|doctor|dr)[._-]?h?0*([1-9]\d*)/i,
+    /@(?:.*[._-])?hospital0*([1-9]\d*)/i,
+    /\bh0*([1-9]\d*)\b/i,
+    /0*([1-9]\d*)[._-]?(?:admin|hospital|hos|staff)/i,
+    /^h?0*([1-9]\d*)@/i,
+    /[._-]0*([1-9]\d*)@/i
+  ];
+
+  for (const pat of hospitalPatterns) {
+    const match = email.match(pat);
+    if (match && match[1]) {
+      const num = parseInt(match[1], 10);
+      return `H${String(num).padStart(2, "0")}`;
     }
   }
 
-  // 3. For any other authenticated user created in Firebase Console (including your main login or general admin accounts):
-  // Automatically grant Master Super Admin access ("ALL")!
-  return "ALL";
+  // 3. Fallback check for any standard hospital id in email (H01 to H99)
+  if (typeof HOSPITAL_IDS !== "undefined") {
+    for (const hid of HOSPITAL_IDS) {
+      if (email.includes(hid.toLowerCase())) {
+        return hid;
+      }
+    }
+  }
+
+  // 4. Any raw digit before @ (e.g. nurse2@...)
+  const fallbackNum = email.match(/0*([1-9]\d*)@/);
+  if (fallbackNum && fallbackNum[1]) {
+    const num = parseInt(fallbackNum[1], 10);
+    return `H${String(num).padStart(2, "0")}`;
+  }
+
+  // 5. Check if session storage already has an explicit database assignment
+  try {
+    const cached = sessionStorage.getItem("admin_assigned_hospital");
+    if (cached && cached !== "ALL") return cached;
+  } catch (e) {}
+
+  // 6. Unknown accounts DO NOT get "ALL" - they return null to prevent accidental super admin access!
+  return null;
 }
 window.getAdminAssignedHospital = getAdminAssignedHospital;
 

@@ -18,6 +18,7 @@ async function loginAdmin(email, password) {
   }
 
   const cleanEmail = email.trim();
+  sessionStorage.clear();
 
   // Engine 1: Attempt standard Firebase Client SDK
   try {
@@ -25,12 +26,24 @@ async function loginAdmin(email, password) {
     const userCredential = await auth.signInWithEmailAndPassword(cleanEmail, password);
     const user = userCredential.user;
 
-    const assignedHospital = getAdminAssignedHospital(user);
+    let assignedHospital = getAdminAssignedHospital(user);
+    if (!assignedHospital) {
+      try {
+        if (typeof firebase !== "undefined" && firebase.database) {
+          const snap = await firebase.database().ref(`admins/${user.uid}`).once("value");
+          const val = snap.val();
+          if (val) {
+            assignedHospital = typeof val === "string" ? val : (val.hospitalId || val.hospital);
+          }
+        }
+      } catch (e) {}
+    }
+
     if (!assignedHospital) {
       const detectedUid = user.uid;
       await auth.signOut();
       sessionStorage.clear();
-      throw new Error(`Access Denied: Your account (${user.email || detectedUid}) is not registered as an authorized administrator.`);
+      throw new Error(`Access Denied: Account (${user.email || detectedUid}) is not assigned to any hospital. Please use an email with your hospital number (e.g. admin-h02@... or hospital2@...) or contact the Super Administrator.`);
     }
 
     sessionStorage.setItem("admin_uid", user.uid);
@@ -77,10 +90,22 @@ async function loginAdmin(email, password) {
     // Direct REST Success!
     const uid = restData.localId;
     const restUser = { uid: uid, email: restData.email || cleanEmail };
-    const assignedHospital = getAdminAssignedHospital(restUser);
+    let assignedHospital = getAdminAssignedHospital(restUser);
+    if (!assignedHospital) {
+      try {
+        if (typeof firebase !== "undefined" && firebase.database) {
+          const snap = await firebase.database().ref(`admins/${uid}`).once("value");
+          const val = snap.val();
+          if (val) {
+            assignedHospital = typeof val === "string" ? val : (val.hospitalId || val.hospital);
+          }
+        }
+      } catch (e) {}
+    }
+
     if (!assignedHospital) {
       sessionStorage.clear();
-      throw new Error(`Access Denied: Your account (${restUser.email}) is not registered as an authorized administrator.`);
+      throw new Error(`Access Denied: Account (${restUser.email}) is not assigned to any hospital. Please use an email with your hospital number (e.g. admin-h02@... or hospital2@...) or contact the Super Administrator.`);
     }
 
     // Save session
@@ -157,7 +182,19 @@ function requireAdminAuth(onAuthorized) {
         return;
       }
 
-      const assigned = getAdminAssignedHospital(user);
+      let assigned = getAdminAssignedHospital(user);
+      if (!assigned) {
+        try {
+          if (typeof firebase !== "undefined" && firebase.database) {
+            const snap = await firebase.database().ref(`admins/${user.uid}`).once("value");
+            const val = snap.val();
+            if (val) {
+              assigned = typeof val === "string" ? val : (val.hospitalId || val.hospital);
+            }
+          }
+        } catch (e) {}
+      }
+
       if (!assigned) {
         console.warn("Unauthorized user detected:", user.email || user.uid);
         const badUid = user.uid;
