@@ -80,6 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function initializeDashboard() {
+    const assigned = getAssignedHospital();
+
     try {
       db = getFirebaseDb();
     } catch (err) {
